@@ -1,1 +1,1 @@
-# SK2---Projekt
+# SK2-Projekt
