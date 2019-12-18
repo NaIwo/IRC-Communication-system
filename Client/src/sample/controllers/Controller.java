@@ -1,27 +1,59 @@
 package sample.controllers;
 
 import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import sample.ServerConnection;
+import sample.WindowOperation;
 
+import javafx.scene.control.TextField;
 import java.io.*;
-import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Controller {
 
-    public void check(ActionEvent actionEvent) throws IOException {
+    @FXML
+    private TextField login;
+    @FXML
+    private TextField port;
+    @FXML
+    private TextField host;
+;
 
-        Socket clientSocket = new Socket("127.0.0.2", 1234);
-        //BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        //String serverMessage = reader.readLine();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        byte[] buffer = new byte[100];
-        String serverMessage = reader.readLine();
-        System.out.println(serverMessage);
+    private ServerConnection server = new ServerConnection();
+    private boolean CONNECT = false;
+    private WindowOperation window = new WindowOperation();
 
-        String clientMessage = "hello";
-        PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
-        writer.println(clientMessage);
+    public void initialize()
+    {
+        host.setText("127.0.0.1");
+        port.setText("1234");
+    }
 
-        clientSocket.close();
+    @FXML
+    public void logIn(ActionEvent actionEvent) throws IOException {
+
+
+        if(!CONNECT)
+        {
+            try {
+                Integer.parseInt(port.getText());
+                CONNECT = server.connectServer(host.getText(), Integer.parseInt(port.getText()), window );
+            }
+            catch (Exception e)
+            {
+                window.warningWindow("Błąd", "Podano błędny port",
+                        "Port powinien być wartością liczbową.", Alert.AlertType.ERROR);
+            }
+
+        }
+        if(CONNECT)
+        {
+            if(server.checkLogin(login.getText(), window))
+            {
+                window.goToNextWindow(actionEvent, "/resources/mainPanel.fxml", 932, 636);
+            }
+        }
 
     }
 }
