@@ -1,6 +1,7 @@
 package sample;
 
 import javafx.scene.control.Alert;
+import javafx.scene.text.Font;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,17 +20,14 @@ public class ServerConnection {
         clientSocket = new Socket();
         int timeOut = 1000;
 
-        try{
+        try {
             clientSocket.connect(socketAddress, timeOut);
-        }
-        catch (SocketTimeoutException ex)
-        {
+        } catch (SocketTimeoutException ex) {
             window.warningWindow("Błąd", "Zbyt długi czas oczekiwania",
                     "Sprawdź poprawność operacji", Alert.AlertType.ERROR);
             clientSocket.close();
             return false;
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
             window.warningWindow("Błąd", "Nie udało się podłączyć do servera",
                     "Sprawdź poprawność operacji", Alert.AlertType.ERROR);
             clientSocket.close();
@@ -39,13 +37,18 @@ public class ServerConnection {
     }
 
     public void closeConnection() throws IOException {
-        clientSocket.close();
+        try
+        {
+            clientSocket.close();
+        } catch (Exception e)
+        {
+            ;
+        }
     }
 
     public boolean checkLogin(String login, WindowOperation window) throws IOException {
 
-        if(login.replaceAll(" ", "").isEmpty())
-        {
+        if (login.replaceAll(" ", "").isEmpty()) {
             window.warningWindow("Błąd", "Nie podano loginu",
                     "Wprowadź login.", Alert.AlertType.ERROR);
             return false;
@@ -60,12 +63,9 @@ public class ServerConnection {
         BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         String serverMessage = reader.readLine();
 
-        if (serverMessage.equals("1"))
-        {
+        if (serverMessage.equals("1")) {
             return true;
-        }
-        else
-        {
+        } else {
             window.warningWindow("Błąd", "Podany login już istnieje",
                     "Wprowadź inny login.", Alert.AlertType.ERROR);
             return false;
@@ -75,11 +75,11 @@ public class ServerConnection {
 
     private String concatenateMessage(String login) {
         String length;
-        if(login.length() < 10)
+        if (login.length() < 10)
             length = "000" + Integer.toString(login.length());
-        else if(login.length() < 100)
+        else if (login.length() < 100)
             length = "00" + Integer.toString(login.length());
-        else if(login.length() < 1000)
+        else if (login.length() < 1000)
             length = "0" + Integer.toString(login.length());
         else
             length = Integer.toString(login.length());
@@ -93,10 +93,43 @@ public class ServerConnection {
 
         writer.println("1" + length + message);
     }
+
     public String getMessage() throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        String serverMessage = reader.readLine();
+
+        String f_long;
+        String s_long;
+        String serverMessage = "0005ERROR0005ERROR";
+        String message;
+
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            serverMessage = reader.readLine();
+            if (serverMessage.startsWith("0")) {
+                f_long = serverMessage.substring(0, 4);
+                f_long = f_long.replaceAll("^0*", "");
+                s_long = serverMessage.substring(Integer.parseInt(f_long) + 4, Integer.parseInt(f_long) + 8);
+                s_long = s_long.replaceAll("^0*", "");
+                message = serverMessage.substring(Integer.parseInt(f_long) + 8, serverMessage.length());
+                while (message.length() < Integer.parseInt(s_long)) {
+                    message = message + reader.readLine();
+                }
+                serverMessage = serverMessage.substring(0, 8 + Integer.parseInt(f_long)) + message;
+
+            }
+        } catch (Exception e)
+        {
+            ;
+        }
+
+
         return serverMessage;
+    }
+
+    public void changeRoom(String number) throws IOException {
+        PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
+        //String length = concatenateMessage(number);
+
+        writer.println(number);
     }
 
 

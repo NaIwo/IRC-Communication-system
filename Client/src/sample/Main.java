@@ -6,9 +6,14 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class Main extends Application {
 
 public static boolean END = true;
+
+
+    private static ServerConnection server = new ServerConnection();
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -20,8 +25,9 @@ public static boolean END = true;
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         launch(args);
         END = false;
+        server.closeConnection();
     }
 }

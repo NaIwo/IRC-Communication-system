@@ -2,6 +2,7 @@ package sample.controllers;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyEvent;
 
@@ -19,6 +20,19 @@ public class MainPanelController {
     private TextField textTyping;
     @FXML
     private TextArea textDisplay;
+    @FXML
+    private Button wait;
+    @FXML
+    private Button first;
+    @FXML
+    private Button second;
+    @FXML
+    private Button third;
+    @FXML
+    private Button fourth;
+    @FXML
+    private Button fifth;
+
 
     private ServerConnection server = new ServerConnection();
     public void initialize()
@@ -27,6 +41,8 @@ public class MainPanelController {
             String message;
             String f_long;
             String s_long;
+            textTyping.setDisable(true);
+            textDisplay.setText("Admin : Jesteś w poczekalni, wybierz pokój do rozmowy.");
             while(END) {
                 try {
                     message = server.getMessage();
@@ -35,6 +51,7 @@ public class MainPanelController {
                         f_long = f_long.replaceAll("^0*", "");
                         s_long = message.substring(Integer.parseInt(f_long) + 4, Integer.parseInt(f_long) + 8);
                         s_long = s_long.replaceAll("^0*", "");
+                        textDisplay.setWrapText(true);
                         textDisplay.setFont(Font.font ("Brush Script MT", 10));
                         textDisplay.setStyle("-fx-text-fill: black ;") ;
                         textDisplay.appendText(message.substring(4, 4 + Integer.parseInt(f_long)));
@@ -44,6 +61,7 @@ public class MainPanelController {
                     }
                     else
                     {
+                        textDisplay.setWrapText(true);
                         textDisplay.setFont(Font.font ("Brush Script MT", 10));
                         textDisplay.setStyle("fx-text-inner-color: red;") ;
                         textDisplay.appendText("default : ");
@@ -74,4 +92,84 @@ public class MainPanelController {
         }
     }
 
+    private void sendRoomToServer(String number)
+    {
+        textDisplay.clear();
+        textTyping.clear();
+        if(!number.equals("0"))
+            textTyping.setDisable(false);
+        Thread thread = new Thread(() -> {
+            try {
+                server.changeRoom("2" + "000" + number);
+            } catch (IOException e) {
+                ;
+            }
+        });
+        thread.start();
+    }
+    @FXML
+    public void waitingRoom(ActionEvent actionEvent) {
+        textDisplay.clear();
+        textTyping.clear();
+        textTyping.setDisable(true);
+        wait.setStyle("-fx-background-color: #ffcc66; -fx-background-radius: 8em; ");
+        first.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;  ");
+        second.setStyle("-fx-background-color: #00cc00;  -fx-background-radius: 8em; ");
+        third.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;  ");
+        fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        sendRoomToServer("0");
+    }
+
+    @FXML
+    public void firstRoom(ActionEvent actionEvent) {
+
+        sendRoomToServer("1");
+        first.setStyle("-fx-background-color: #ffcc66; -fx-background-radius: 8em;");
+        wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
+        second.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
+        third.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
+        fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
+        fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
+    }
+    @FXML
+    public void secondRoom(ActionEvent actionEvent) {
+        sendRoomToServer("2");
+        second.setStyle("-fx-background-color: #ffcc66; -fx-background-radius: 8em; ");
+        first.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        third.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+    }
+    @FXML
+    public void thridRoom(ActionEvent actionEvent) {
+        sendRoomToServer("3");
+        third.setStyle("-fx-background-color: #ffcc66;-fx-background-radius: 8em;  ");
+        first.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        second.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+    }
+    @FXML
+    public void fourthRoom(ActionEvent actionEvent) {
+        sendRoomToServer("4");
+        fourth.setStyle("-fx-background-color: #ffcc66; -fx-background-radius: 8em; ");
+        first.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        second.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        third.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        fifth.setStyle("-fx-background-color: #00cc00;-fx-background-radius: 8em;  ");
+    }
+    @FXML
+    public void fifthRoom(ActionEvent actionEvent) {
+        sendRoomToServer("5");
+        fifth.setStyle("-fx-background-color: #ffcc66;-fx-background-radius: 8em;  ");
+        first.setStyle("-fx-background-color: #00cc00;-fx-background-radius: 8em;  ");
+        second.setStyle("-fx-background-color: #00cc00;-fx-background-radius: 8em;  ");
+        third.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+        wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
+    }
 }
