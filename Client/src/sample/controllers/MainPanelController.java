@@ -8,10 +8,13 @@ import javafx.scene.input.KeyEvent;
 
 import javafx.scene.control.TextField;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontPosture;
+import javafx.scene.text.FontWeight;
 import sample.ServerConnection;
 
 import static sample.Main.END;
 
+import java.awt.*;
 import java.io.IOException;
 
 public class MainPanelController {
@@ -33,6 +36,7 @@ public class MainPanelController {
     @FXML
     private Button fifth;
 
+    private int room_number = 0;
 
     private ServerConnection server = new ServerConnection();
     public void initialize()
@@ -42,32 +46,34 @@ public class MainPanelController {
             String f_long;
             String s_long;
             textTyping.setDisable(true);
+            textDisplay.setWrapText(true);
             textDisplay.setText("Admin : Jesteś w poczekalni, wybierz pokój do rozmowy.");
             while(END) {
                 try {
                     message = server.getMessage();
-                    if(message.startsWith("0")) {
+                    if(message.startsWith("0") && room_number != 0) {
+
+                        message = message.substring(1,message.length());
                         f_long = message.substring(0, 4);
                         f_long = f_long.replaceAll("^0*", "");
                         s_long = message.substring(Integer.parseInt(f_long) + 4, Integer.parseInt(f_long) + 8);
                         s_long = s_long.replaceAll("^0*", "");
-                        textDisplay.setWrapText(true);
-                        textDisplay.setFont(Font.font ("Brush Script MT", 10));
-                        textDisplay.setStyle("-fx-text-fill: black ;") ;
+
                         textDisplay.appendText(message.substring(4, 4 + Integer.parseInt(f_long)));
-                        textDisplay.setFont(Font.font (" Bold Italic", 15));
-                        textDisplay.setStyle("-fx-text-fill:  #660066 ;") ;
+
                         textDisplay.appendText("  :  " + message.substring(Integer.parseInt(f_long) + 8, Integer.parseInt(f_long) + 8 + Integer.parseInt(s_long)) + "\n");
                     }
-                    else
+                   else if(message.startsWith("1") && room_number != 0)
                     {
-                        textDisplay.setWrapText(true);
-                        textDisplay.setFont(Font.font ("Brush Script MT", 10));
-                        textDisplay.setStyle("fx-text-inner-color: red;") ;
-                        textDisplay.appendText("default : ");
-                        textDisplay.setFont(Font.font ("Bold Italic", 15));
-                        textDisplay.setStyle("-fx-text-fill:  #660066 ;") ;
-                        textDisplay.appendText(message + "\n");
+
+                        message = message.substring(1,message.length());
+                        textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4,message.length()) + " dołączył do pokoju.\n");
+                    }
+                    else if (message.startsWith("2") && room_number != 0)
+                    {
+
+                        message = message.substring(1,message.length());
+                        textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4,message.length()) + " opuścił pokój.\n");
                     }
                 } catch (IOException e) {
                     END = false;
@@ -96,11 +102,12 @@ public class MainPanelController {
     {
         textDisplay.clear();
         textTyping.clear();
+        room_number = Integer.parseInt(number);
         if(!number.equals("0"))
             textTyping.setDisable(false);
         Thread thread = new Thread(() -> {
             try {
-                server.changeRoom("2" + "000" + number);
+                server.changeRoom("2" + number);
             } catch (IOException e) {
                 ;
             }

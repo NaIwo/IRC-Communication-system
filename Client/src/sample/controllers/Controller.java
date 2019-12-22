@@ -20,9 +20,13 @@ public class Controller {
     private TextField host;
 ;
 
-    private ServerConnection server = new ServerConnection();
+    private ServerConnection server;
     private boolean CONNECT = false;
     private WindowOperation window = new WindowOperation();
+
+    public Controller() throws IOException {
+        server = new ServerConnection();
+    }
 
     public void initialize()
     {
