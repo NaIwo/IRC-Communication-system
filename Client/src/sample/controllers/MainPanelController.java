@@ -2,6 +2,7 @@ package sample.controllers;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyEvent;
@@ -11,6 +12,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import sample.ServerConnection;
+import sample.WindowOperation;
 
 import static sample.Main.END;
 
@@ -39,8 +41,8 @@ public class MainPanelController {
     private int room_number = 0;
 
     private ServerConnection server = new ServerConnection();
-    public void initialize()
-    {
+
+    public void initialize() {
         Thread thread = new Thread(() -> {
             String message;
             String f_long;
@@ -48,12 +50,12 @@ public class MainPanelController {
             textTyping.setDisable(true);
             textDisplay.setWrapText(true);
             textDisplay.setText("Admin : Jesteś w poczekalni, wybierz pokój do rozmowy.");
-            while(END) {
+            while (END) {
                 try {
                     message = server.getMessage();
-                    if(message.startsWith("0") && room_number != 0) {
+                    if (message.startsWith("0") && room_number != 0) {
 
-                        message = message.substring(1,message.length());
+                        message = message.substring(1, message.length());
                         f_long = message.substring(0, 4);
                         f_long = f_long.replaceAll("^0*", "");
                         s_long = message.substring(Integer.parseInt(f_long) + 4, Integer.parseInt(f_long) + 8);
@@ -62,21 +64,31 @@ public class MainPanelController {
                         textDisplay.appendText(message.substring(4, 4 + Integer.parseInt(f_long)));
 
                         textDisplay.appendText("  :  " + message.substring(Integer.parseInt(f_long) + 8, Integer.parseInt(f_long) + 8 + Integer.parseInt(s_long)) + "\n");
-                    }
-                   else if(message.startsWith("1") && room_number != 0)
-                    {
+                    } else if (message.startsWith("1") && room_number != 0) {
 
-                        message = message.substring(1,message.length());
-                        textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4,message.length()) + " dołączył do pokoju.\n");
-                    }
-                    else if (message.startsWith("2") && room_number != 0)
-                    {
+                        message = message.substring(1, message.length());
+                        textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4, message.length()) + " dołączył do pokoju.\n");
+                    } else if (message.startsWith("2") && room_number != 0) {
 
-                        message = message.substring(1,message.length());
-                        textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4,message.length()) + " opuścił pokój.\n");
+                        message = message.substring(1, message.length());
+                        textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4, message.length()) + " opuścił pokój.\n");
                     }
                 } catch (IOException e) {
                     END = false;
+                } catch (NullPointerException nu) {
+
+                    textDisplay.setText("BŁĄD serwera, aplikacja zostanie wyłączona, spróbój uruchomić ponownie. ");
+                    textDisplay.setFont(Font.font("Verdana", FontWeight.BOLD, 25));
+                    textDisplay.setStyle("-fx-text-inner-color: red");
+
+                    {
+                        try {
+                            Thread.sleep(4000);
+                        } catch (InterruptedException e) {
+                            ;
+                        }
+                        System.exit(0);
+                    }
                 }
             }
         });
@@ -84,8 +96,7 @@ public class MainPanelController {
     }
 
     public void onEnter(ActionEvent actionEvent) throws IOException {
-        if(!textTyping.equals(""))
-        {
+        if (!textTyping.equals("")) {
             Thread thread = new Thread(() -> {
                 try {
                     server.sendMessage(textTyping.getText());
@@ -98,12 +109,11 @@ public class MainPanelController {
         }
     }
 
-    private void sendRoomToServer(String number)
-    {
+    private void sendRoomToServer(String number) {
         textDisplay.clear();
         textTyping.clear();
         room_number = Integer.parseInt(number);
-        if(!number.equals("0"))
+        if (!number.equals("0"))
             textTyping.setDisable(false);
         Thread thread = new Thread(() -> {
             try {
@@ -114,6 +124,7 @@ public class MainPanelController {
         });
         thread.start();
     }
+
     @FXML
     public void waitingRoom(ActionEvent actionEvent) {
         textDisplay.clear();
@@ -139,6 +150,7 @@ public class MainPanelController {
         fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
         fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
     }
+
     @FXML
     public void secondRoom(ActionEvent actionEvent) {
         sendRoomToServer("2");
@@ -149,6 +161,7 @@ public class MainPanelController {
         fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
         fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
     }
+
     @FXML
     public void thridRoom(ActionEvent actionEvent) {
         sendRoomToServer("3");
@@ -159,6 +172,7 @@ public class MainPanelController {
         fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
         fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
     }
+
     @FXML
     public void fourthRoom(ActionEvent actionEvent) {
         sendRoomToServer("4");
@@ -169,6 +183,7 @@ public class MainPanelController {
         wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
         fifth.setStyle("-fx-background-color: #00cc00;-fx-background-radius: 8em;  ");
     }
+
     @FXML
     public void fifthRoom(ActionEvent actionEvent) {
         sendRoomToServer("5");

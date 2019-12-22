@@ -57,6 +57,8 @@ public class Controller {
             {
                 window.goToNextWindow(actionEvent, "/resources/mainPanel.fxml", 932, 636);
             }
+            else
+                CONNECT = false;
         }
 
     }

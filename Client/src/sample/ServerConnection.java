@@ -7,19 +7,22 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.net.*;
 
 public class ServerConnection {
 
     private static Socket clientSocket = null;
+    private static String host;
+    private static int port;
 
     public boolean connectServer(String host, int port, WindowOperation window) throws IOException {
 
+        ServerConnection.host = host;
+        ServerConnection.port = port;
         SocketAddress socketAddress = new InetSocketAddress(host, port);
-
         clientSocket = new Socket();
         int timeOut = 1000;
-
         try {
             clientSocket.connect(socketAddress, timeOut);
         } catch (SocketTimeoutException ex) {
@@ -32,18 +35,21 @@ public class ServerConnection {
                     "Sprawdź poprawność operacji", Alert.AlertType.ERROR);
             clientSocket.close();
             return false;
+        } catch (Exception e) {
+            window.warningWindow("Błąd", "Nie udało się podłączyć do servera",
+                    "Sprawdź poprawność operacji", Alert.AlertType.ERROR);
+            clientSocket.close();
+            return false;
         }
         return true;
     }
 
     public void closeConnection() throws IOException {
-        try
-        {
+        try {
             PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
             writer.println("3");
             clientSocket.close();
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             ;
         }
     }
@@ -61,17 +67,24 @@ public class ServerConnection {
         length = concatenateMessage(login);
 
         writer.println("0" + length + login);
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            String serverMessage = reader.readLine();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        String serverMessage = reader.readLine();
+            if (serverMessage.equals("1")) {
+                return true;
+            } else {
+                window.warningWindow("Błąd", "Podany login już istnieje",
+                        "Wprowadź inny login.", Alert.AlertType.ERROR);
+                clientSocket.close();
+                return false;
 
-        if (serverMessage.equals("1")) {
-            return true;
-        } else {
-            window.warningWindow("Błąd", "Podany login już istnieje",
-                    "Wprowadź inny login.", Alert.AlertType.ERROR);
+            }
+        } catch (Exception in) {
+            window.warningWindow("Błąd", "Nie udało się wysłać danych do serwera.",
+                    "Możliwe, że serwer jest nieosiągalny, spróbuj ponownie.", Alert.AlertType.ERROR);
+            clientSocket.close();
             return false;
-
         }
     }
 
@@ -118,10 +131,8 @@ public class ServerConnection {
                 }
                 serverMessage = "0" + serverMessage.substring(0, 8 + Integer.parseInt(f_long)) + message;
 
-            }
-            else if (serverMessage.startsWith("1"))
-            {
-                serverMessage = serverMessage.substring(1,0);
+            } else if (serverMessage.startsWith("1")) {
+                serverMessage = serverMessage.substring(1, serverMessage.length());
                 f_long = serverMessage.substring(0, 4);
                 f_long = f_long.replaceAll("^0*", "");
                 message = serverMessage.substring(4, serverMessage.length());
@@ -129,10 +140,8 @@ public class ServerConnection {
                     message = message + reader.readLine();
                 }
                 serverMessage = "1" + serverMessage.substring(0, 4) + message;
-            }
-            else if (serverMessage.startsWith("2"))
-            {
-                serverMessage = serverMessage.substring(1,0);
+            } else if (serverMessage.startsWith("2")) {
+                serverMessage = serverMessage.substring(1, serverMessage.length());
                 f_long = serverMessage.substring(0, 4);
                 f_long = f_long.replaceAll("^0*", "");
                 message = serverMessage.substring(4, serverMessage.length());
@@ -141,8 +150,7 @@ public class ServerConnection {
                 }
                 serverMessage = "2" + serverMessage.substring(0, 4) + message;
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             ;
         }
 
