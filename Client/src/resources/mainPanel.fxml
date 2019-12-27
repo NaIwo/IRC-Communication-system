@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.text.Font?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="636.0" prefWidth="932.0" style="-fx-background-color: #85a3e0; -fx-border-color: black; -fx-border-width: 5;" xmlns="http://javafx.com/javafx/10.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.controllers.MainPanelController">
+   <children>
+      <Separator layoutX="135.0" layoutY="4.0" orientation="VERTICAL" prefHeight="627.0" prefWidth="20.0" />
+      <TextArea fx:id="textDisplay" editable="false" layoutX="176.0" layoutY="13.0" prefHeight="523.0" prefWidth="723.0" style="-fx-text-fill: #660066;">
+         <font>
+            <Font name="System Bold Italic" size="15.0" />
+         </font>
+      </TextArea>
+      <TextField fx:id="textTyping" layoutX="173.0" layoutY="576.0" onAction="#onEnter" prefHeight="35.0" prefWidth="723.0" promptText="Wpisz wiadmość:">
+         <font>
+            <Font name="Brush Script MT Italic" size="12.0" />
+         </font>
+      </TextField>
+      <Button fx:id="first" layoutX="33.0" layoutY="121.0" maxHeight="77.0" maxWidth="86.0" mnemonicParsing="false" onAction="#firstRoom" prefHeight="67.0" prefWidth="75.0" style="-fx-background-radius: 8em; -fx-background-color: #00cc00;" text="1">
+         <font>
+            <Font name="System Bold Italic" size="26.0" />
+         </font>
+      </Button>
+      <Button fx:id="wait" layoutX="33.0" layoutY="25.0" maxHeight="77.0" maxWidth="86.0" mnemonicParsing="false" onAction="#waitingRoom" prefHeight="67.0" prefWidth="75.0" style="-fx-background-radius: 8em; -fx-background-color: #ffcc66;" text="Poczekalnia">
+         <font>
+            <Font name="System Bold Italic" size="10.0" />
+         </font>
+      </Button>
+      <Button fx:id="second" layoutX="33.0" layoutY="219.0" maxHeight="77.0" maxWidth="86.0" mnemonicParsing="false" onAction="#secondRoom" prefHeight="67.0" prefWidth="75.0" style="-fx-background-radius: 8em; -fx-background-color: #00cc00;" text="2">
+         <font>
+            <Font name="System Bold Italic" size="26.0" />
+         </font>
+      </Button>
+      <Button fx:id="third" layoutX="33.0" layoutY="318.0" maxHeight="77.0" maxWidth="86.0" mnemonicParsing="false" onAction="#thridRoom" prefHeight="67.0" prefWidth="75.0" style="-fx-background-radius: 8em; -fx-background-color: #00cc00;" text="3">
+         <font>
+            <Font name="System Bold Italic" size="26.0" />
+         </font>
+      </Button>
+      <Button fx:id="fourth" layoutX="33.0" layoutY="410.0" maxHeight="77.0" maxWidth="86.0" mnemonicParsing="false" onAction="#fourthRoom" prefHeight="67.0" prefWidth="75.0" style="-fx-background-radius: 8em; -fx-background-color: #00cc00;" text="4">
+         <font>
+            <Font name="System Bold Italic" size="26.0" />
+         </font>
+      </Button>
+      <Button fx:id="fifth" layoutX="33.0" layoutY="502.0" maxHeight="77.0" maxWidth="86.0" mnemonicParsing="false" onAction="#fifthRoom" prefHeight="67.0" prefWidth="75.0" style="-fx-background-radius: 8em; -fx-background-color: #00cc00;" text="5">
+         <font>
+            <Font name="System Bold Italic" size="26.0" />
+         </font>
+      </Button>
+   </children>
+</Pane>
