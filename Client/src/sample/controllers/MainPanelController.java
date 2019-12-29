@@ -99,7 +99,7 @@ public class MainPanelController {
         if (!textTyping.equals("")) {
             Thread thread = new Thread(() -> {
                 try {
-                    server.sendMessage(textTyping.getText());
+                    if(!textTyping.getText().isEmpty()) server.sendMessage(textTyping.getText());
                     textTyping.clear();
                 } catch (IOException e) {
                     ;
