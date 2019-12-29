@@ -136,13 +136,13 @@ public class MainPanelController {
         third.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;  ");
         fourth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
         fifth.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
-        sendRoomToServer("0");
+        if (room_number != 0) sendRoomToServer("0");
     }
 
     @FXML
     public void firstRoom(ActionEvent actionEvent) {
 
-        sendRoomToServer("1");
+        if (room_number != 1) sendRoomToServer("1");
         first.setStyle("-fx-background-color: #ffcc66; -fx-background-radius: 8em;");
         wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
         second.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em;");
@@ -153,7 +153,7 @@ public class MainPanelController {
 
     @FXML
     public void secondRoom(ActionEvent actionEvent) {
-        sendRoomToServer("2");
+        if (room_number != 2) sendRoomToServer("2");
         second.setStyle("-fx-background-color: #ffcc66; -fx-background-radius: 8em; ");
         first.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
         wait.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
@@ -164,7 +164,7 @@ public class MainPanelController {
 
     @FXML
     public void thridRoom(ActionEvent actionEvent) {
-        sendRoomToServer("3");
+        if (room_number != 3) sendRoomToServer("3");
         third.setStyle("-fx-background-color: #ffcc66;-fx-background-radius: 8em;  ");
         first.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
         second.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
@@ -175,7 +175,7 @@ public class MainPanelController {
 
     @FXML
     public void fourthRoom(ActionEvent actionEvent) {
-        sendRoomToServer("4");
+        if (room_number != 4) sendRoomToServer("4");
         fourth.setStyle("-fx-background-color: #ffcc66; -fx-background-radius: 8em; ");
         first.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
         second.setStyle("-fx-background-color: #00cc00; -fx-background-radius: 8em; ");
@@ -186,7 +186,7 @@ public class MainPanelController {
 
     @FXML
     public void fifthRoom(ActionEvent actionEvent) {
-        sendRoomToServer("5");
+        if (room_number != 5) sendRoomToServer("5");
         fifth.setStyle("-fx-background-color: #ffcc66;-fx-background-radius: 8em;  ");
         first.setStyle("-fx-background-color: #00cc00;-fx-background-radius: 8em;  ");
         second.setStyle("-fx-background-color: #00cc00;-fx-background-radius: 8em;  ");
