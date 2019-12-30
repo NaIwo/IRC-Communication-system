@@ -42,7 +42,7 @@ public class Controller {
         {
             try {
                 Integer.parseInt(port.getText());
-                CONNECT = server.connectServer(host.getText(), Integer.parseInt(port.getText()), window );
+                if(!login.getText().isEmpty()) CONNECT = server.connectServer(host.getText(), Integer.parseInt(port.getText()), window );
             }
             catch (Exception e)
             {

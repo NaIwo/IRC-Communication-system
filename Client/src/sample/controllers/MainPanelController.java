@@ -96,10 +96,10 @@ public class MainPanelController {
     }
 
     public void onEnter(ActionEvent actionEvent) throws IOException {
-        if (!textTyping.equals("")) {
+        if(!textTyping.getText().isEmpty()) {
             Thread thread = new Thread(() -> {
                 try {
-                    if(!textTyping.getText().isEmpty()) server.sendMessage(textTyping.getText());
+                     server.sendMessage(textTyping.getText());
                     textTyping.clear();
                 } catch (IOException e) {
                     ;
