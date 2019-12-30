@@ -86,6 +86,7 @@ bool checkIfLoginExists(thread_data_t *th_data) {
         
         if(!clients[i].name.compare(nick)) {
             cout << "Istnieje juz ktos o podanym nicku" << endl;
+            pthread_mutex_unlock(&clients_mutex);
             return true;
         }
 
