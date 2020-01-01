@@ -11,8 +11,11 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+
+//Klasa obsługująca okienka programu
 public class WindowOperation {
 
+    //Metoda służaca do przełączania między oknami
     public void goToNextWindow(ActionEvent actionEvent, String path, int width, int height) throws IOException {
         Parent log_root = FXMLLoader.load(getClass().getResource(path));
         Scene scene = new Scene(log_root, width, height);
@@ -22,6 +25,7 @@ public class WindowOperation {
     }
 
 
+    //Metoda wyświetlająca okienka błędów i ostrzeżeń w celu informacyjnym dla użytkownika
     @FXML
     public void warningWindow(String title, String header, String text, Alert.AlertType alertType) {
         Alert alert = new Alert(alertType);
