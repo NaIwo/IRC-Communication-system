@@ -19,6 +19,8 @@ import static sample.Main.END;
 import java.awt.*;
 import java.io.IOException;
 
+
+//Klasa obsługująca główne okno aplikacji
 public class MainPanelController {
 
     @FXML
@@ -42,7 +44,11 @@ public class MainPanelController {
 
     private ServerConnection server = new ServerConnection();
 
+
+    //metoda inicjalizująca
     public void initialize() {
+
+        //Tworzenie nowego wątku, który działa w pętli aż do zakończenia działania programu
         Thread thread = new Thread(() -> {
             String message;
             String f_long;
@@ -53,6 +59,8 @@ public class MainPanelController {
             while (END) {
                 try {
                     message = server.getMessage();
+
+                    //dzielenie odpowiednio wiadomości na osobę wysyłającą i wiadomość
                     if (message.startsWith("0") && room_number != 0) {
 
                         message = message.substring(1, message.length());
@@ -61,15 +69,18 @@ public class MainPanelController {
                         s_long = message.substring(Integer.parseInt(f_long) + 4, Integer.parseInt(f_long) + 8);
                         s_long = s_long.replaceAll("^0*", "");
 
+                        //wyświetlenie wiadomości na ekranie
                         textDisplay.appendText(message.substring(4, 4 + Integer.parseInt(f_long)));
 
                         textDisplay.appendText("  :  " + message.substring(Integer.parseInt(f_long) + 8, Integer.parseInt(f_long) + 8 + Integer.parseInt(s_long)) + "\n");
                     } else if (message.startsWith("1") && room_number != 0) {
 
+                        //wypisanie komunikatu o dołączeniu nowego użytkownika
                         message = message.substring(1, message.length());
                         textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4, message.length()) + " dołączył do pokoju.\n");
                     } else if (message.startsWith("2") && room_number != 0) {
 
+                        //wypisanie komunikatu o opuszczeniu pokoju przez uzytkownika
                         message = message.substring(1, message.length());
                         textDisplay.appendText("\t\t\t\t\t\tUżytkownik " + message.substring(4, message.length()) + " opuścił pokój.\n");
                     }
@@ -95,8 +106,11 @@ public class MainPanelController {
         thread.start();
     }
 
+    //metoda służąca wysłaniu wiadomości przez użytkownika
     public void onEnter(ActionEvent actionEvent) throws IOException {
+        //warunek sprawdzający czy nie jest wysyłana pusta wiadomość
         if(!textTyping.getText().isEmpty()) {
+            //nowy wątek w celu współbieżnego wysłania wiadomości
             Thread thread = new Thread(() -> {
                 try {
                      server.sendMessage(textTyping.getText());
@@ -109,12 +123,14 @@ public class MainPanelController {
         }
     }
 
+    //wysyłanie wiadomości do serwera o zmianie pokoju
     private void sendRoomToServer(String number) {
         textDisplay.clear();
         textTyping.clear();
         room_number = Integer.parseInt(number);
         if (!number.equals("0"))
             textTyping.setDisable(false);
+        //nowy wątek w celu współbieżnego wysłania wiadomości o słanie wiadomości
         Thread thread = new Thread(() -> {
             try {
                 server.changeRoom("2" + number);
@@ -125,6 +141,7 @@ public class MainPanelController {
         thread.start();
     }
 
+    //Ustawianie kolorów i wartości głównego ekranu w zależności od pokoju w którym się aktualnie znajduje
     @FXML
     public void waitingRoom(ActionEvent actionEvent) {
         textDisplay.clear();

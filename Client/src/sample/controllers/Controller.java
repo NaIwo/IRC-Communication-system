@@ -10,6 +10,8 @@ import javafx.scene.control.TextField;
 import java.io.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
+//Klasa pierwszego okna, okna logowania
 public class Controller {
 
     @FXML
@@ -18,7 +20,7 @@ public class Controller {
     private TextField port;
     @FXML
     private TextField host;
-;
+
 
     private ServerConnection server;
     private boolean CONNECT = false;
@@ -34,12 +36,15 @@ public class Controller {
         port.setText("1234");
     }
 
+    //metoda logowania
     @FXML
     public void logIn(ActionEvent actionEvent) throws IOException {
 
 
+        //jeśli połączenie nie zostało jeszcze nawiązane
         if(!CONNECT)
         {
+            //jeśli login nie został wpisany, nie zostanie podjęta próba połączenia w celu ułatwienia pracy serwera
             try {
                 Integer.parseInt(port.getText());
                 if(!login.getText().isEmpty()) CONNECT = server.connectServer(host.getText(), Integer.parseInt(port.getText()), window );
@@ -51,6 +56,7 @@ public class Controller {
             }
 
         }
+        //jeśli połączenie już zostało nawiązane, a login jest unikalny, zostanie przełączone okno na kolejne
         if(CONNECT)
         {
             if(server.checkLogin(login.getText(), window))
