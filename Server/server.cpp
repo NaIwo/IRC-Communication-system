@@ -23,6 +23,7 @@ struct thread_data_t {
     pthread_mutex_t room_mutex[6];
     pthread_mutex_t* clients_mutex;
     vector<User>* clients;
+    bool flag;
 }; //struktura przekazywana przy tworzeniu watku
 
 //Funkcja sprawdzajaca czy dany deskryptor klienta istnieje w wektorze klientow
@@ -35,13 +36,13 @@ bool checkIfDescriptorExists(int descriptor, vector<User> *clients, pthread_mute
             return true;
         }
     }
-    pthread_mutex_unlock(clients_mutex);
 
     struct User user;
     user.descriptor = descriptor;
     user.name = "";
     user.room = 0;
     clients->push_back(user);
+    pthread_mutex_unlock(clients_mutex);
 
     cout << "Dodano nowego klienta o deskryptorze: " << descriptor << endl;
     return false;
@@ -63,14 +64,38 @@ bool checkIfLoginExists(thread_data_t *th_data) {
     }
 
     pom = atoi(length);
-    char* nick = new char[pom];
+    char* name = new char[pom];
+    memset(name, 0, pom);
 
+    int number = 0;
+    string temp = "";
     int read_result;
-    read_result = read(th_data -> user.descriptor, nick, pom); //Odczytanie nicku klienta
-    if(read_result == -1) {
-        cout << "Nie udało się odczytac nicku" << endl;
-        return true;
+    //Odczytanie nicku klienta
+    while(number < pom) {
+
+        read_result = read(th_data -> user.descriptor, name, pom-number);
+        if(read_result == -1) {
+            cout << "Nie udało się odczytac nicku" << endl;
+            return true;
+        }
+        else if(read_result == 0) {
+            cout << "Nie udało się odcztać całego nicku - klient rozłączył się" << endl;
+            return true;
+        }
+        number += read_result;
+        temp = temp + name;
+
+        if(number == pom) break;
+
+        delete name;
+        name = new char[pom-number];
+        memset(name, 0, pom-number);
     }
+    
+    delete name;
+
+    char nick[temp.size()];
+    strcpy(nick, temp.c_str());
 
     pthread_mutex_lock(th_data->clients_mutex);
     int size = th_data -> clients -> size();
@@ -88,12 +113,12 @@ bool checkIfLoginExists(thread_data_t *th_data) {
         if((*th_data->clients)[i].descriptor == th_data -> user.descriptor)
             index = i;
     }
-    pthread_mutex_unlock(th_data->clients_mutex);
 
     cout << "Dodano nick: " << nick << " dla klienta o deskryptorze " << th_data -> user.descriptor << endl;
     th_data -> user.name = nick;
     th_data -> user.room = 0;
     (*th_data->clients)[index].name = nick; //ustawienie nicku danemu klientowi
+    pthread_mutex_unlock(th_data->clients_mutex);
     return false;
 }
 
@@ -127,6 +152,7 @@ int changeRoomByClient(thread_data_t *th_data) {
 
         if(pom == -1) {
             cout << "Nie udalo sie odczytac numeru pokoju" << endl;
+            return -1;
         }
     }
     
@@ -171,13 +197,18 @@ void sendMessageToOthersAboutChangingRoom(thread_data_t *th_data, int room, int 
     strcpy(temp, answer.c_str());
     int size = th_data->clients->size();
     pthread_mutex_lock(&th_data->room_mutex[room]);
+
     for(int i=0; i< size; i++) {
+
         if((*th_data->clients)[i].room == room) {
+
             int write_result = write((*th_data->clients)[i].descriptor, temp, sizeof(temp));
-            if(write_result == -1)
+
+            if(write_result == -1) {
                 cout << "Nie udało się wyslac wiadomosci odnosnie zmiany pokoju" << endl;
-        }
-            
+            }
+
+        }   
     }
     pthread_mutex_unlock(&th_data->room_mutex[room]);
 }
@@ -193,19 +224,46 @@ void getMessegeAndSendItToOthers(thread_data_t *th_data) {
 
         if(pom == -1) {
             cout << "Nie udało się odczytać dlugosci wiadomosci" << endl;
+            th_data->flag = true;
+            return;
         }
     }
     
     pom = atoi(length);
-    char* message = new char[pom];
+    char* mess = new char[pom];
+    memset(mess, 0, pom);
 
-
+    int number = 0;
+    string message = "";
     int read_result;
-    read_result = read(th_data -> user.descriptor, message, pom); //Odczytanie wiadomosci od uzytkownika
-    if(read_result == -1) {
-        cout << "Nie udało się odczytac wiadomosci" << endl;
+
+    //Odczytanie wiadomosci od uzytkownika
+    while(number < pom) {
+        read_result = read(th_data -> user.descriptor, mess, pom-number);
+
+        if(read_result == -1) {
+            cout << "Nie udało się odczytac wiadomosci" << endl;
+            th_data->flag = true;
+            return;
+        }
+        else if(read_result == 0) {
+            cout << "Nie udało się odczytać całej wiadomosci" << endl;
+            th_data->flag = true;
+            return;
+        }
+
+        number += read_result;
+        message = message + mess;
+
+        if(number == pom) break;
+
+        delete mess;
+        mess = new char[pom-number];
+        memset(mess, 0, pom-number);
     }
-    
+
+    delete mess;
+
     string s(length);
     string answer = "0" + getLengthOfNick(th_data) + th_data -> user.name + s + message + "\n";
     char temp[answer.size()];
@@ -257,10 +315,12 @@ void *ThreadBehavior(void *t_data) {
             }
             else if (atoi(mode) == 1) { //Jesli 1 to przeslanie wiadomosci do pokoju
                 getMessegeAndSendItToOthers(th_data);
+                if(th_data->flag == true) break;
                 getRidOfRub(th_data);
             }
             else if (atoi(mode) == 2) { //Jesli 2 to wyslanie wiadomosci odnosnie dolaczenia do pokoju i opuszczenia pokoju
                 int room = changeRoomByClient(th_data);
+                if(room == -1) break;
                 getRidOfRub(th_data);
                 sendMessageToOthersAboutChangingRoom(th_data, room, 2);
                 sendMessageToOthersAboutChangingRoom(th_data, th_data -> user.room, 1);
@@ -295,6 +355,7 @@ void handleConnection(int connection_socket_descriptor, vector<User>* clients, p
         t_data->user.descriptor = connection_socket_descriptor;
         t_data->clients = clients;
         t_data->clients_mutex = clients_mutex;
+        t_data->flag = false;
         for(int i=0; i<6; i++) {
             t_data->room_mutex[i] = room_mutex[i];
         }
