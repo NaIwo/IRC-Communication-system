@@ -20,34 +20,28 @@ struct User {
 
 struct thread_data_t {
     User user;
+    pthread_mutex_t room_mutex[6];
+    pthread_mutex_t* clients_mutex;
+    vector<User>* clients;
 }; //struktura przekazywana przy tworzeniu watku
-
-
-
-vector<User> clients; //Wektor zawierajacy dane kazdego klienta
-
-//Mutexy rozwiazujace problem wspolbieznego pisania do okreslonego pokoju
-pthread_mutex_t room_mutex[6] = {PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
-//Mutex rozwiazujacy problem wspolbieznej modyfikacji wektora clients
-pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 //Funkcja sprawdzajaca czy dany deskryptor klienta istnieje w wektorze klientow
 //Jesli nie to zwraca wartosc false, jesli tak to zwraca wartosc true
-bool checkIfDescriptorExists(int descriptor) {
-    pthread_mutex_lock(&clients_mutex);
-    int size = clients.size();
+bool checkIfDescriptorExists(int descriptor, vector<User> *clients, pthread_mutex_t* clients_mutex) {
+    pthread_mutex_lock(clients_mutex);
+    int size = clients->size();
     for(int i=0; i < size; i++) {
-        if (clients[i].descriptor == descriptor) {
+        if ((*clients)[i].descriptor == descriptor) {
             return true;
         }
     }
-    pthread_mutex_unlock(&clients_mutex);
+    pthread_mutex_unlock(clients_mutex);
 
     struct User user;
     user.descriptor = descriptor;
     user.name = "";
     user.room = 0;
-    clients.push_back(user);
+    clients->push_back(user);
 
     cout << "Dodano nowego klienta o deskryptorze: " << descriptor << endl;
     return false;
@@ -78,27 +72,28 @@ bool checkIfLoginExists(thread_data_t *th_data) {
         return true;
     }
 
-    pthread_mutex_lock(&clients_mutex);
-    int size = clients.size();
+    pthread_mutex_lock(th_data->clients_mutex);
+    int size = th_data -> clients -> size();
     int index;
+
     //Sprawdzenie czy podany nick istnieje juz w wektorze klientow
     for(int i=0; i<size; i++) {
-        
-        if(!clients[i].name.compare(nick)) {
+
+        if(!(*th_data->clients)[i].name.compare(nick)) {
             cout << "Istnieje juz ktos o podanym nicku" << endl;
-            pthread_mutex_unlock(&clients_mutex);
+            pthread_mutex_unlock(th_data->clients_mutex);
             return true;
         }
 
-        if(clients[i].descriptor == th_data -> user.descriptor)
+        if((*th_data->clients)[i].descriptor == th_data -> user.descriptor)
             index = i;
     }
-    pthread_mutex_unlock(&clients_mutex);
+    pthread_mutex_unlock(th_data->clients_mutex);
 
     cout << "Dodano nick: " << nick << " dla klienta o deskryptorze " << th_data -> user.descriptor << endl;
     th_data -> user.name = nick;
     th_data -> user.room = 0;
-    clients[index].name = nick; //ustawienie nicku danemu klientowi
+    (*th_data->clients)[index].name = nick; //ustawienie nicku danemu klientowi
     return false;
 }
 
@@ -112,10 +107,10 @@ void getRidOfRub(thread_data_t *th_data) {
 //Funkcja usuwajaca klienta o danym deskryptorze z wektora klientow
 //Wywolywana po zakonczeniu uzytkowania z aplikacji przez klienta
 void removeClientFromClients(thread_data_t *th_data) {
-    int size = clients.size();
+    int size = th_data -> clients -> size();
     for(int i=0; i<size; i++) {
-        if(th_data -> user.descriptor == clients[i].descriptor) {
-            clients.erase(clients.begin() + i);
+        if(th_data -> user.descriptor == (*th_data->clients)[i].descriptor) {
+            th_data->clients->erase(th_data->clients->begin() + i);
             break;
         }
     }
@@ -137,15 +132,15 @@ int changeRoomByClient(thread_data_t *th_data) {
     
     int old_room = th_data -> user.room;
     th_data -> user.room = atoi(room);
-    pthread_mutex_lock(&clients_mutex);
-    pom = clients.size();
+    pthread_mutex_lock(th_data->clients_mutex);
+    pom = th_data->clients->size();
     for(int i=0; i<pom; i++) {
-        if(th_data -> user.descriptor == clients[i].descriptor) {
-            clients[i].room = atoi(room); //Ustawienie klientowi nowego numeru pokoju
+        if(th_data -> user.descriptor == (*th_data->clients)[i].descriptor) {
+            (*th_data->clients)[i].room = atoi(room); //Ustawienie klientowi nowego numeru pokoju
             break;
         }         
     }
-    pthread_mutex_unlock(&clients_mutex);
+    pthread_mutex_unlock(th_data->clients_mutex);
 
     cout << "Klient o deskryptorze " << th_data -> user.descriptor << " zmienil pokoj na " << th_data -> user.room << endl;
     return old_room;
@@ -174,13 +169,17 @@ void sendMessageToOthersAboutChangingRoom(thread_data_t *th_data, int room, int 
     
     char temp[answer.size()];
     strcpy(temp, answer.c_str());
-    int size = clients.size();
-    pthread_mutex_lock(&room_mutex[room]);
+    int size = th_data->clients->size();
+    pthread_mutex_lock(&th_data->room_mutex[room]);
     for(int i=0; i< size; i++) {
-        if(clients[i].room == room)
-            write(clients[i].descriptor, temp, sizeof(temp));
+        if((*th_data->clients)[i].room == room) {
+            int write_result = write((*th_data->clients)[i].descriptor, temp, sizeof(temp));
+            if(write_result == -1)
+                cout << "Nie udało się wyslac wiadomosci odnosnie zmiany pokoju" << endl;
+        }
+            
     }
-    pthread_mutex_unlock(&room_mutex[room]);
+    pthread_mutex_unlock(&th_data->room_mutex[room]);
 }
 
 //Funkcja pobierajaca dlugosc wiadomosci oraz wiadomosc z bufora
@@ -212,14 +211,19 @@ void getMessegeAndSendItToOthers(thread_data_t *th_data) {
     char temp[answer.size()];
     strcpy(temp, answer.c_str());
 
-    pthread_mutex_lock(&room_mutex[th_data -> user.room]);
-    int size = clients.size();
+    pthread_mutex_lock(&th_data->room_mutex[th_data -> user.room]);
+    int size = th_data->clients->size();
     for(int i=0; i< size; i++) {
-        if(clients[i].room == th_data -> user.room) //Wyslanie wiadomosci w przyjetej konwencji do okreslonego pokoju
-            write(clients[i].descriptor, temp, sizeof(temp));
+        //Wyslanie wiadomosci w przyjetej konwencji do okreslonego pokoju
+        if((*th_data->clients)[i].room == th_data -> user.room) {
+                int write_result = write((*th_data->clients)[i].descriptor, temp, sizeof(temp));
+                if(write_result == -1)
+                    cout << "Nie udało się wysłać wiadomosci do danego pokoju" << endl;
+            }
+            
     }
     cout << "Klient o deskryptorze " << th_data -> user.descriptor << " wyslal wiadomosc do pokoju " << th_data -> user.room << endl;
-    pthread_mutex_unlock(&room_mutex[th_data -> user.room]);
+    pthread_mutex_unlock(&th_data->room_mutex[th_data -> user.room]);
 }
 
 //Funkcja opisujaca dzialanie watku
@@ -240,14 +244,14 @@ void *ThreadBehavior(void *t_data) {
         else if (character > 0) {
             if(atoi(mode) == 0) { //Jesli 0 to sprawdzenie mozliwosci nadania nicku i ustawienie go
                 if(!checkIfLoginExists(th_data)) {
-                    pthread_mutex_lock(&room_mutex[0]);
+                    pthread_mutex_lock(&th_data->room_mutex[0]);
                     write(th_data -> user.descriptor, "1\n", 2 * sizeof(char));
-                    pthread_mutex_unlock(&room_mutex[0]);
+                    pthread_mutex_unlock(&th_data->room_mutex[0]);
                 }
                 else {
-                    pthread_mutex_lock(&room_mutex[0]);
+                    pthread_mutex_lock(&th_data->room_mutex[0]);
                     write(th_data -> user.descriptor, "0\n", 2 * sizeof(char)); 
-                    pthread_mutex_unlock(&room_mutex[0]);
+                    pthread_mutex_unlock(&th_data->room_mutex[0]);
                     break;} //lub zakonczenie watku
                 getRidOfRub(th_data);
             }
@@ -270,25 +274,30 @@ void *ThreadBehavior(void *t_data) {
         memset(mode, 0, sizeof(mode));
     }
     cout << "Usunieto klienta o deskryptorze: " << th_data -> user.descriptor << endl;
-    pthread_mutex_lock(&clients_mutex);
-    pthread_mutex_lock(&room_mutex[th_data -> user.room]);
+    pthread_mutex_lock(th_data->clients_mutex);
+    pthread_mutex_lock(&th_data->room_mutex[th_data -> user.room]);
     removeClientFromClients(th_data); //Usuniecie klienta z wektora uzytkownikow
-    pthread_mutex_unlock(&room_mutex[th_data -> user.room]);
-    pthread_mutex_unlock(&clients_mutex);
+    pthread_mutex_unlock(&th_data->room_mutex[th_data -> user.room]);
+    pthread_mutex_unlock(th_data->clients_mutex);
     close(th_data -> user.descriptor);
     delete th_data;
     pthread_exit(NULL); //Zakonczenie watku
 }
 
 //Funkcja tworzaca nowy watek dla nowo polaczanego klienta
-void handleConnection(int connection_socket_descriptor) {
+void handleConnection(int connection_socket_descriptor, vector<User>* clients, pthread_mutex_t* clients_mutex, pthread_mutex_t* room_mutex) {
     int create_result = 0;
 
     pthread_t thread1;
 
     struct thread_data_t *t_data = new thread_data_t();
-    if(!checkIfDescriptorExists(connection_socket_descriptor)) {
+    if(!checkIfDescriptorExists(connection_socket_descriptor, clients, clients_mutex)) {
         t_data->user.descriptor = connection_socket_descriptor;
+        t_data->clients = clients;
+        t_data->clients_mutex = clients_mutex;
+        for(int i=0; i<6; i++) {
+            t_data->room_mutex[i] = room_mutex[i];
+        }
         create_result = pthread_create(&thread1, NULL, ThreadBehavior, (void*) t_data); //Stworzenie nowego watku
 
         if (create_result) {
@@ -306,6 +315,11 @@ int main(int argc, char* argv[]) {
     int listen_result;
     char reuse_addr_val = 1;
     struct sockaddr_in server_address;
+    //Mutexy rozwiazujace problem wspolbieznego pisania do okreslonego pokoju
+    pthread_mutex_t room_mutex[6] = {PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER};
+    //Mutex rozwiazujacy problem wspolbieznej modyfikacji wektora clients
+    pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
+    vector<User> clients; //Wektor zawierajacy dane kazdego klienta
 
     if (argc < 2) {
         cout << "Nie podano portu na którym ma działać serwer\n";
@@ -346,7 +360,7 @@ int main(int argc, char* argv[]) {
             cout << "Błąd przy próbie utworzenia gniazda dla połączenia klient-server\n";
             return 0;
         }
-        handleConnection(connection_socket_descriptor);
+        handleConnection(connection_socket_descriptor, &clients, &clients_mutex, room_mutex);
     }
     close(server_socket_descriptor);
     return 0;
