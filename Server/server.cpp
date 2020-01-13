@@ -53,23 +53,41 @@ bool checkIfDescriptorExists(int descriptor, vector<User> *clients, pthread_mute
 bool checkIfLoginExists(thread_data_t *th_data) {
     char length[4];
     int pom;
+    int read_result;
+    int number = 0;
+    string temp = "";
+    char* readLength = new char[4];
+    memset(readLength, 0, 4);
 
     //Odczytanie dlugosci nicku klienta
-    while((pom = read(th_data -> user.descriptor, length, sizeof(length)) == 0)) {
+    while(number < 4) {
 
-        if(pom == -1) {
+        read_result = read(th_data -> user.descriptor, readLength, 4 - number);
+        if(read_result == -1) {
             cout << "Nie udało się odczytać dlugosci nicku" << endl;
             return true;
         }
+        else if(read_result == 0) {
+            cout << "Nie udało się odczytać długosci nicku - klient rozłączył się" << endl;
+            return true;
+        }
+        number += read_result;
+        temp = temp + readLength;
+
+        if(number == 4) break;
+
+        delete readLength;
+        readLength = new char[4-number];
+        memset(readLength, 0, 4 - number);
     }
+    strcpy(length, temp.c_str());
 
     pom = atoi(length);
     char* name = new char[pom];
     memset(name, 0, pom);
 
-    int number = 0;
-    string temp = "";
-    int read_result;
+    number = 0;
+    temp = "";
     //Odczytanie nicku klienta
     while(number < pom) {
 
@@ -189,26 +207,51 @@ string getLengthOfNick(thread_data_t *th_data) {
 //Funkcja wysylajaca informacje o zmianie pokoju przez danego klienta do okreslonego pokoju
 void sendMessageToOthersAboutChangingRoom(thread_data_t *th_data, int room, int mode) {
 
+    int write_result;
     string answer;
     if(mode == 2) answer = "2" + getLengthOfNick(th_data) + th_data -> user.name + "\n"; //Wyslanie do starego pokoju
     else answer = "1" + getLengthOfNick(th_data) + th_data -> user.name + "\n"; //Wyslanie do nowego pokoju
     
     char temp[answer.size()];
     strcpy(temp, answer.c_str());
+    char* writeRoom = new char[answer.size()];
+    strcpy(writeRoom, answer.c_str());
     int size = th_data->clients->size();
+    int length = answer.size();
+    int number = 0;
+
     pthread_mutex_lock(&th_data->room_mutex[room]);
 
     for(int i=0; i< size; i++) {
 
         if((*th_data->clients)[i].room == room) {
 
-            int write_result = write((*th_data->clients)[i].descriptor, temp, sizeof(temp));
+            while(number < length) {
 
-            if(write_result == -1) {
-                cout << "Nie udało się wyslac wiadomosci odnosnie zmiany pokoju" << endl;
+                write_result = write((*th_data->clients)[i].descriptor, writeRoom, length-number);
+                if(write_result == -1) {
+                    cout << "Nie udało się wysłać wiadomości odnośnie zmiany pokoju" << endl;
+                    th_data->flag = true;
+                    return;
+                }
+                else if(write_result == 0) {
+                    cout << "Nie udało się wysłać wiadomości odnośnie zmiany pokoju - klient rozłączył się" << endl;
+                    th_data->flag = true;
+                    return;
+                }
+                number+= write_result;
+
+                if(number == length) break;
+
+                delete writeRoom;
+                writeRoom = new char[length-number];
+                memcpy(writeRoom, temp+number, length-number);
             }
-
         }   
+        delete writeRoom;
+        number = 0;
+        writeRoom = new char[length];
+        strcpy(writeRoom, answer.c_str());
     }
     pthread_mutex_unlock(&th_data->room_mutex[room]);
 }
@@ -218,24 +261,43 @@ void sendMessageToOthersAboutChangingRoom(thread_data_t *th_data, int room, int 
 void getMessegeAndSendItToOthers(thread_data_t *th_data) {
     char length[4];
     int pom;
+    int number = 0;
+    int read_result;
+    char* readLength = new char[4];
+    string message = "";
+    memset(readLength, 0, 4);
 
     //Odczytanie dlugosci wiadomosci uzytkownika
-    while((pom = read(th_data -> user.descriptor, length, sizeof(length)) == 0)) {
+    while(number < 4) {
 
-        if(pom == -1) {
-            cout << "Nie udało się odczytać dlugosci wiadomosci" << endl;
+        read_result = read(th_data -> user.descriptor, readLength, 4 - number);
+        if(read_result == -1) {
+            cout << "Nie udało się odczytać długosci wiadomosci" << endl;
             th_data->flag = true;
             return;
         }
+        else if(read_result == 0) {
+            cout << "Nie udało się odczytać długości wiadomości - klient rozłączył się" << endl;
+            th_data->flag = true;
+            return;
+        }
+        number += read_result;
+        message = message + readLength;
+
+        if(number == 4) break;
+
+        delete readLength;
+        readLength = new char[4-number];
+        memset(readLength, 0, 4-number);
     }
-    
+    strcpy(length, message.c_str());
+
     pom = atoi(length);
     char* mess = new char[pom];
     memset(mess, 0, pom);
 
-    int number = 0;
-    string message = "";
-    int read_result;
+    number = 0;
+    message = "";
 
     //Odczytanie wiadomosci od uzytkownika
     while(number < pom) {
@@ -268,17 +330,44 @@ void getMessegeAndSendItToOthers(thread_data_t *th_data) {
     string answer = "0" + getLengthOfNick(th_data) + th_data -> user.name + s + message + "\n";
     char temp[answer.size()];
     strcpy(temp, answer.c_str());
+    char* writeMessage = new char[answer.size()];
+    strcpy(writeMessage, answer.c_str());
+    number = 0;
+    int lengthAnswer = answer.size();
+    int write_result;
 
     pthread_mutex_lock(&th_data->room_mutex[th_data -> user.room]);
     int size = th_data->clients->size();
     for(int i=0; i< size; i++) {
         //Wyslanie wiadomosci w przyjetej konwencji do okreslonego pokoju
         if((*th_data->clients)[i].room == th_data -> user.room) {
-                int write_result = write((*th_data->clients)[i].descriptor, temp, sizeof(temp));
-                if(write_result == -1)
-                    cout << "Nie udało się wysłać wiadomosci do danego pokoju" << endl;
-            }
             
+            while(number < lengthAnswer) {
+
+                write_result = write((*th_data->clients)[i].descriptor, writeMessage, lengthAnswer-number);
+                if(write_result == -1) {
+                    cout << "Nie udało się wysłać wiadomości do pokoju" << endl;
+                    th_data->flag = true;
+                    return;
+                }
+                else if(write_result == 0) {
+                    cout << "Nie udało się wysłać wiadomości do pokoju - klient rozłączył się" << endl;
+                    th_data->flag = true;
+                    return;
+                }
+                number += write_result;
+
+                if(number == lengthAnswer) break;
+
+                delete writeMessage;
+                writeMessage = new char[lengthAnswer-number];
+                memcpy(writeMessage, temp+number, lengthAnswer-number);
+            }
+        }
+        delete writeMessage;
+        number = 0;
+        writeMessage = new char[lengthAnswer];
+        strcpy(writeMessage, answer.c_str());    
     }
     cout << "Klient o deskryptorze " << th_data -> user.descriptor << " wyslal wiadomosc do pokoju " << th_data -> user.room << endl;
     pthread_mutex_unlock(&th_data->room_mutex[th_data -> user.room]);
@@ -323,7 +412,9 @@ void *ThreadBehavior(void *t_data) {
                 if(room == -1) break;
                 getRidOfRub(th_data);
                 sendMessageToOthersAboutChangingRoom(th_data, room, 2);
+                if(th_data->flag == true) break;
                 sendMessageToOthersAboutChangingRoom(th_data, th_data -> user.room, 1);
+                if(th_data->flag == true) break;
             }
             else if (atoi(mode) == 3) { //Jesli 3 to wyslanie wiadomosci odnosnie opuszczenia pokoju
                 int room = th_data -> user.room;
